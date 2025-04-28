@@ -66,4 +66,4 @@ const Auth = async (apiKey, client_id) => {
     return false;
   }
 };
-module.exports = Auth;
+export default Auth;

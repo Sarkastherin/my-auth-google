@@ -1,5 +1,5 @@
 {
-  "name": "auth-google-grossremolques",
+  "name": "my-auth-google",
   "version": "1.0.0",
   "description": "A simple authentication package",
   "main": "index.js",
@@ -7,6 +7,6 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["auth", "google", "authentication"],
-  "author": "Katherin Guerrero <katherin.guerrero@grossremolques.com>",
+  "author": "Katherin Guerrero <kathejudith@gmail.com>",
   "license": "MIT"
 }
