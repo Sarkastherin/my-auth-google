@@ -1,6 +1,6 @@
 {
   "name": "my-auth-google",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A simple authentication package",
   "main": "src/index.js",
   "types": "src/my-auth-google.d.ts",
