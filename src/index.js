@@ -1,7 +1,6 @@
 const SCOPES = 'https://mail.google.com/ https://www.googleapis.com/auth/spreadsheets';
 const DISCOVERY_DOC_GMAIL = "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest";
 const DISCOVERY_DOC_SHEET = "https://sheets.googleapis.com/$discovery/rest?version=v4";
-const DISCOVERY_DOC_DRIVE = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
 
 let tokenClient;
 let gapiInited = false;
@@ -12,7 +11,7 @@ function gapiLoaded(apiKey) {
     gapi.load("client", async () => {
       await gapi.client.init({
         apiKey: apiKey,
-        discoveryDocs: [DISCOVERY_DOC_GMAIL, DISCOVERY_DOC_SHEET, DISCOVERY_DOC_DRIVE],
+        discoveryDocs: [DISCOVERY_DOC_GMAIL, DISCOVERY_DOC_SHEET],
       });
       gapiInited = true;
       resolve();
@@ -57,7 +56,6 @@ function handleAuthClick() {
 }
 
 const Auth = async (apiKey, client_id) => {
-  console.log('Hola')
   try {
     await gapiLoaded(apiKey);
     await gisLoaded(client_id);
