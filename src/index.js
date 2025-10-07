@@ -31,6 +31,40 @@ function gisLoaded(client_id) {
   });
 }
 
+// Función para verificar si el token sigue siendo válido
+function isTokenValid(token) {
+  if (!token || !token.expires_at) {
+    return false;
+  }
+  
+  // Verificar si el token ha expirado (con 5 minutos de margen)
+  const expiresAt = parseInt(token.expires_at);
+  const now = Date.now();
+  const fiveMinutes = 5 * 60 * 1000;
+  
+  return (expiresAt - now) > fiveMinutes;
+}
+
+// Función para verificar autenticación sin solicitar permisos
+function checkExistingAuth() {
+  return new Promise((resolve) => {
+    const savedToken = localStorage.getItem("google_auth_token");
+    if (savedToken) {
+      try {
+        const parsedToken = JSON.parse(savedToken);
+        if (isTokenValid(parsedToken)) {
+          gapi.client.setToken(parsedToken);
+          resolve(true);
+          return;
+        }
+      } catch (e) {
+        localStorage.removeItem("google_auth_token");
+      }
+    }
+    resolve(false);
+  });
+}
+
 function handleAuthClick() {
   return new Promise((resolve, reject) => {
     if (gapiInited && gisInited) {
@@ -39,18 +73,34 @@ function handleAuthClick() {
           reject(resp.error);
         } else {
           let token = gapi.client.getToken();
-          if (!localStorage.getItem("token")) {
-            localStorage.setItem("token", token);
+          if (token) {
+            // Guardar token como string JSON
+            localStorage.setItem("google_auth_token", JSON.stringify(token));
           }
           resolve(true);
         }
       };
-      gapi.client.setToken(localStorage.getItem("token"));
-      if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({ prompt: "consent" });
-      } else {
-        tokenClient.requestAccessToken({ prompt: "" });
+      
+      // Intentar cargar token existente
+      const savedToken = localStorage.getItem("google_auth_token");
+      if (savedToken) {
+        try {
+          const parsedToken = JSON.parse(savedToken);
+          gapi.client.setToken(parsedToken);
+          
+          // Verificar si el token sigue siendo válido
+          if (isTokenValid(parsedToken)) {
+            resolve(true);
+            return;
+          }
+        } catch (e) {
+          console.log("Token guardado inválido, solicitando nuevo");
+          localStorage.removeItem("google_auth_token");
+        }
       }
+      
+      // Si no hay token válido, solicitar uno nuevo
+      tokenClient.requestAccessToken({ prompt: "consent" });
     }
   });
 }
@@ -59,6 +109,14 @@ const Auth = async (apiKey, client_id) => {
   try {
     await gapiLoaded(apiKey);
     await gisLoaded(client_id);
+    
+    // Primero verificar si ya hay una sesión válida
+    const existingAuth = await checkExistingAuth();
+    if (existingAuth) {
+      return true;
+    }
+    
+    // Si no hay sesión válida, solicitar nueva autenticación
     const authResult = await handleAuthClick();
     return authResult;
   } catch (error) {
@@ -66,4 +124,24 @@ const Auth = async (apiKey, client_id) => {
     return false;
   }
 };
+
+// Función para hacer logout
+const Logout = () => {
+  try {
+    // Limpiar token de Google API
+    if (gapi && gapi.client) {
+      gapi.client.setToken(null);
+    }
+    
+    // Limpiar localStorage
+    localStorage.removeItem("google_auth_token");
+    
+    return true;
+  } catch (error) {
+    console.error("Error during logout", error);
+    return false;
+  }
+};
+
 export default Auth;
+export { Logout };
