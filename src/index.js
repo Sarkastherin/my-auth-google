@@ -33,17 +33,18 @@ function gisLoaded(client_id) {
 
 // Función para verificar si el token sigue siendo válido
 function isTokenValid(token) {
-  if (!token || !token.expires_at) {
+  if (!token || !token.expires_in || !token.created_at) {
     return false;
   }
-  
-  // Verificar si el token ha expirado (con 5 minutos de margen)
-  const expiresAt = parseInt(token.expires_at);
+
+  const expiresInMs = token.expires_in * 1000;
+  const expiresAt = token.created_at + expiresInMs;
   const now = Date.now();
   const fiveMinutes = 5 * 60 * 1000;
-  
+
   return (expiresAt - now) > fiveMinutes;
 }
+
 
 // Función para verificar autenticación sin solicitar permisos
 function checkExistingAuth() {
@@ -53,6 +54,7 @@ function checkExistingAuth() {
       try {
         const parsedToken = JSON.parse(savedToken);
         if (isTokenValid(parsedToken)) {
+          console.log("Using existing valid token");
           gapi.client.setToken(parsedToken);
           resolve(true);
           return;
@@ -75,6 +77,7 @@ function handleAuthClick() {
           let token = gapi.client.getToken();
           if (token) {
             // Guardar token como string JSON
+            token.created_at = Date.now();
             localStorage.setItem("google_auth_token", JSON.stringify(token));
           }
           resolve(true);
@@ -112,6 +115,7 @@ const Auth = async (apiKey, client_id) => {
     
     // Primero verificar si ya hay una sesión válida
     const existingAuth = await checkExistingAuth();
+    console.log("Existing Auth:", existingAuth);
     if (existingAuth) {
       return true;
     }
