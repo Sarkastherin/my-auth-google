@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo: Renovación Sin Interrupciones</title>
+    <script async defer src="https://apis.google.com/js/api.js"></script>
+    <script async defer src="https://accounts.google.com/gsi/client"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-bar {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .token-info {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .refresh-log {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #ffc107;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .simulate-btn {
+            background: #ff9800;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .simulate-btn:hover {
+            background: #e68900;
+        }
+        .typing-indicator {
+            color: #666;
+            font-style: italic;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Demo: Renovación Automática Sin Interrupciones</h1>
+        
+        <div class="status-bar" id="authStatus">
+            <strong>Estado:</strong> <span id="authStatusText">No autenticado</span>
+        </div>
+
+        <button onclick="iniciarAuth()" id="authBtn">Iniciar Autenticación</button>
+
+        <div class="token-info" id="tokenInfo" style="display: none;">
+            <h3>📊 Estado del Token</h3>
+            <p><strong>Válido:</strong> <span id="tokenValid">-</span></p>
+            <p><strong>Necesita renovación:</strong> <span id="tokenNeedsRefresh">-</span></p>
+            <p><strong>Tiempo hasta expirar:</strong> <span id="tokenTimeLeft">-</span></p>
+            <div>
+                <button class="simulate-btn" onclick="simularRenovacion()">
+                    🧪 Simular Renovación (para testing)
+                </button>
+                <button class="simulate-btn" onclick="forzarRenovacion()">
+                    🔄 Forzar Renovación Real
+                </button>
+            </div>
+        </div>
+
+        <div class="refresh-log" id="refreshLog" style="display: none;">
+            <h4>📝 Log de Renovaciones Automáticas</h4>
+            <div id="logContent"></div>
+        </div>
+
+        <!-- FORMULARIO QUE EL USUARIO ESTÁ LLENANDO -->
+        <div id="formSection" style="display: none;">
+            <h2>📝 Formulario de Ejemplo</h2>
+            <p><strong>Instrucciones:</strong> Llena este formulario normalmente. La renovación del token ocurrirá en segundo plano sin interrumpir tu trabajo.</p>
+
+            <form id="demoForm">
+                <div class="form-group">
+                    <label for="nombre">Nombre completo:</label>
+                    <input type="text" id="nombre" name="nombre" placeholder="Escribe tu nombre...">
+                    <div class="typing-indicator" id="nombreTyping"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" placeholder="tu@email.com">
+                    <div class="typing-indicator" id="emailTyping"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="telefono">Teléfono:</label>
+                    <input type="tel" id="telefono" name="telefono" placeholder="123-456-7890">
+                    <div class="typing-indicator" id="telefonoTyping"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="empresa">Empresa:</label>
+                    <input type="text" id="empresa" name="empresa" placeholder="Nombre de tu empresa">
+                    <div class="typing-indicator" id="empresaTyping"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cargo">Cargo:</label>
+                    <select id="cargo" name="cargo">
+                        <option value="">Selecciona tu cargo...</option>
+                        <option value="desarrollador">Desarrollador</option>
+                        <option value="diseñador">Diseñador</option>
+                        <option value="gerente">Gerente</option>
+                        <option value="director">Director</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">Descripción del proyecto:</label>
+                    <textarea id="descripcion" name="descripcion" placeholder="Describe tu proyecto en detalle..."></textarea>
+                    <div class="typing-indicator" id="descripcionTyping"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="presupuesto">Presupuesto estimado:</label>
+                    <input type="number" id="presupuesto" name="presupuesto" placeholder="10000">
+                    <div class="typing-indicator" id="presupuestoTyping"></div>
+                </div>
+            </form>
+
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; margin-top: 20px;">
+                <h4>✅ Datos del formulario se mantienen durante renovación:</h4>
+                <pre id="formData">{}</pre>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Simular el comportamiento de my-auth-google
+        let simulatedTokenExpiry = Date.now() + (60 * 1000); // Expira en 1 minuto para demo
+        let isAuthenticated = false;
+        let refreshCount = 0;
+
+        function logRefresh(message) {
+            const logDiv = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div><strong>${timestamp}:</strong> ${message}</div>`;
+            document.getElementById('refreshLog').style.display = 'block';
+        }
+
+        function updateTokenStatus() {
+            if (!isAuthenticated) return;
+
+            const now = Date.now();
+            const timeLeft = Math.max(0, simulatedTokenExpiry - now);
+            const minutes = Math.floor(timeLeft / 1000 / 60);
+            const seconds = Math.floor((timeLeft / 1000) % 60);
+            
+            const needsRefresh = timeLeft <= (10 * 60 * 1000); // 10 minutos
+            const isValid = timeLeft > (5 * 60 * 1000); // 5 minutos
+
+            document.getElementById('tokenValid').textContent = isValid ? '✅ Sí' : '❌ No';
+            document.getElementById('tokenNeedsRefresh').textContent = needsRefresh ? '⚠️ Sí' : '✅ No';
+            document.getElementById('tokenTimeLeft').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            // Renovación automática cuando quedan 10 segundos (para demo rápida)
+            if (timeLeft <= 10000 && timeLeft > 0) {
+                renovarTokenAutomaticamente();
+            }
+        }
+
+        function renovarTokenAutomaticamente() {
+            refreshCount++;
+            logRefresh(`🔄 Renovación automática #${refreshCount} - Token renovado sin interrupciones`);
+            
+            // Simular nueva expiración
+            simulatedTokenExpiry = Date.now() + (60 * 1000); // Nuevo token por 1 minuto más
+            
+            // IMPORTANTE: Notar que el formulario NO se afecta
+            logRefresh(`✅ Renovación completada. Formulario mantiene todos los datos.`);
+        }
+
+        window.iniciarAuth = function() {
+            isAuthenticated = true;
+            simulatedTokenExpiry = Date.now() + (60 * 1000);
+            
+            document.getElementById('authStatusText').innerHTML = '✅ Autenticado con auto-renovación habilitada';
+            document.getElementById('authBtn').style.display = 'none';
+            document.getElementById('tokenInfo').style.display = 'block';
+            document.getElementById('formSection').style.display = 'block';
+            
+            logRefresh('🎉 Autenticación exitosa. Monitoreo automático iniciado.');
+            
+            // Actualizar estado cada segundo
+            setInterval(updateTokenStatus, 1000);
+        };
+
+        window.simularRenovacion = function() {
+            renovarTokenAutomaticamente();
+        };
+
+        window.forzarRenovacion = async function() {
+            logRefresh('🔄 Forzando renovación manual...');
+            // Aquí iría: await forceTokenRefresh();
+            renovarTokenAutomaticamente();
+        };
+
+        // Monitorear cambios en el formulario para mostrar que se mantienen
+        function setupFormMonitoring() {
+            const form = document.getElementById('demoForm');
+            const inputs = form.querySelectorAll('input, textarea, select');
+            
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    // Mostrar indicador de que está escribiendo
+                    const indicator = document.getElementById(this.id + 'Typing');
+                    if (indicator) {
+                        indicator.textContent = '✍️ Escribiendo...';
+                        setTimeout(() => {
+                            indicator.textContent = '';
+                        }, 1000);
+                    }
+                    
+                    // Actualizar datos del formulario en tiempo real
+                    updateFormData();
+                });
+            });
+        }
+
+        function updateFormData() {
+            const form = document.getElementById('demoForm');
+            const formData = new FormData(form);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            document.getElementById('formData').textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Inicializar monitoreo del formulario
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFormMonitoring();
+            updateFormData();
+        });
+    </script>
+</body>
+</html>

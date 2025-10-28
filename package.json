@@ -1,7 +1,7 @@
 {
   "name": "my-auth-google",
-  "version": "1.0.9",
-  "description": "A simple authentication package",
+  "version": "2.0.0",
+  "description": "Google authentication package with automatic token refresh and advanced token management",
   "main": "src/index.js",
   "types": "src/my-auth-google.d.ts",
   "type": "module",
@@ -11,12 +11,25 @@
   "keywords": [
     "auth",
     "google",
-    "authentication"
+    "authentication",
+    "oauth2",
+    "token",
+    "refresh",
+    "automatic",
+    "gmail",
+    "sheets",
+    "gapi"
   ],
   "author": "Katherin Guerrero <kathejudith@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Sarkastherin/my-auth-google.git"
-  }
+  },
+  "files": [
+    "src/index.js",
+    "src/my-auth-google.d.ts",
+    "README.md",
+    "example-auto-refresh.js"
+  ]
 }
