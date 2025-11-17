@@ -1,14 +1,7 @@
-const SCOPES = [
-  "https://www.googleapis.com/auth/drive", // Acceso completo a Drive
-  "https://www.googleapis.com/auth/drive.file", // Acceso a archivos creados por la app
-  "https://www.googleapis.com/auth/drive.metadata.readonly", // Leer metadatos
-];
-const DISCOVERY_DOC_GMAIL =
-  "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest";
-const DISCOVERY_DOC_SHEET =
-  "https://sheets.googleapis.com/$discovery/rest?version=v4";
-const DISCOVERY_DOC_DRIVE =
-  "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
+const DISCOVERY_DOC_GMAIL = "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest";
+const DISCOVERY_DOC_SHEET = "https://sheets.googleapis.com/$discovery/rest?version=v4";
+const DISCOVERY_DOC_DRIVE = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
 
 let tokenClient;
 let gapiInited = false;
@@ -21,11 +14,7 @@ function gapiLoaded(apiKey) {
     gapi.load("client", async () => {
       await gapi.client.init({
         apiKey: apiKey,
-        discoveryDocs: [
-          DISCOVERY_DOC_GMAIL,
-          DISCOVERY_DOC_SHEET,
-          DISCOVERY_DOC_DRIVE,
-        ],
+        discoveryDocs: [DISCOVERY_DOC_GMAIL, DISCOVERY_DOC_SHEET, DISCOVERY_DOC_DRIVE],
       });
       gapiInited = true;
       resolve();
@@ -38,7 +27,7 @@ function gisLoaded(client_id) {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: client_id,
       scope: SCOPES,
-      callback: "",
+      callback: "", 
     });
     gisInited = true;
     resolve();
@@ -56,7 +45,7 @@ function isTokenValid(token) {
   const now = Date.now();
   const fiveMinutes = 5 * 60 * 1000;
 
-  return expiresAt - now > fiveMinutes;
+  return (expiresAt - now) > fiveMinutes;
 }
 
 // Función para verificar si el token necesita renovación (10 minutos antes de expirar)
@@ -70,7 +59,7 @@ function needsTokenRefresh(token) {
   const now = Date.now();
   const tenMinutes = 10 * 60 * 1000; // Renovar 10 minutos antes de expirar
 
-  return expiresAt - now <= tenMinutes;
+  return (expiresAt - now) <= tenMinutes;
 }
 
 // Función para renovar el token silenciosamente
@@ -91,12 +80,12 @@ async function refreshTokenSilently() {
           // Guardar token renovado
           token.created_at = Date.now();
           localStorage.setItem("google_auth_token", JSON.stringify(token));
-
+          
           // Notificar que el token se renovó
           if (onTokenRefreshCallback) {
             onTokenRefreshCallback(token);
           }
-
+          
           console.log("Token renovado automáticamente");
           resolve(true);
         } else {
@@ -123,11 +112,9 @@ function startTokenMonitoring() {
       const savedToken = localStorage.getItem("google_auth_token");
       if (savedToken) {
         const parsedToken = JSON.parse(savedToken);
-
+        
         if (needsTokenRefresh(parsedToken)) {
-          console.log(
-            "Token necesita renovación, renovando automáticamente..."
-          );
+          console.log("Token necesita renovación, renovando automáticamente...");
           await refreshTokenSilently();
         }
       }
@@ -146,6 +133,7 @@ function stopTokenMonitoring() {
     tokenMonitorInterval = null;
   }
 }
+
 
 // Función para verificar autenticación sin solicitar permisos
 function checkExistingAuth() {
@@ -183,14 +171,14 @@ function handleAuthClick() {
           resolve(true);
         }
       };
-
+      
       // Intentar cargar token existente
       const savedToken = localStorage.getItem("google_auth_token");
       if (savedToken) {
         try {
           const parsedToken = JSON.parse(savedToken);
           gapi.client.setToken(parsedToken);
-
+          
           // Verificar si el token sigue siendo válido
           if (isTokenValid(parsedToken)) {
             resolve(true);
@@ -201,7 +189,7 @@ function handleAuthClick() {
           localStorage.removeItem("google_auth_token");
         }
       }
-
+      
       // Si no hay token válido, solicitar uno nuevo
       tokenClient.requestAccessToken({ prompt: "consent" });
     }
@@ -212,34 +200,30 @@ const Auth = async (apiKey, client_id, options = {}) => {
   try {
     await gapiLoaded(apiKey);
     await gisLoaded(client_id);
-
+    
     // Configurar callback de renovación si se proporciona
-    if (
-      options.onTokenRefresh &&
-      typeof options.onTokenRefresh === "function"
-    ) {
+    if (options.onTokenRefresh && typeof options.onTokenRefresh === 'function') {
       onTokenRefreshCallback = options.onTokenRefresh;
     }
-
+    
     // Primero verificar si ya hay una sesión válida
     const existingAuth = await checkExistingAuth();
     if (existingAuth) {
       // Iniciar monitoreo automático del token
-      if (options.autoRefresh !== false) {
-        // Por defecto true, se puede desactivar
+      if (options.autoRefresh !== false) { // Por defecto true, se puede desactivar
         startTokenMonitoring();
       }
       return true;
     }
-
+    
     // Si no hay sesión válida, solicitar nueva autenticación
     const authResult = await handleAuthClick();
-
+    
     // Si la autenticación fue exitosa, iniciar monitoreo
     if (authResult && options.autoRefresh !== false) {
       startTokenMonitoring();
     }
-
+    
     return authResult;
   } catch (error) {
     console.error("Error during authentication", error);
@@ -252,18 +236,18 @@ const Logout = () => {
   try {
     // Detener monitoreo automático
     stopTokenMonitoring();
-
+    
     // Limpiar callback de renovación
     onTokenRefreshCallback = null;
-
+    
     // Limpiar token de Google API
     if (gapi && gapi.client) {
       gapi.client.setToken(null);
     }
-
+    
     // Limpiar localStorage
     localStorage.removeItem("google_auth_token");
-
+    
     return true;
   } catch (error) {
     console.error("Error during logout", error);
@@ -282,18 +266,18 @@ const checkTokenStatus = () => {
     const parsedToken = JSON.parse(savedToken);
     const valid = isTokenValid(parsedToken);
     const needsRefresh = needsTokenRefresh(parsedToken);
-
+    
     let timeUntilExpiry = 0;
     if (parsedToken.expires_in && parsedToken.created_at) {
-      const expiresAt = parsedToken.created_at + parsedToken.expires_in * 1000;
+      const expiresAt = parsedToken.created_at + (parsedToken.expires_in * 1000);
       timeUntilExpiry = Math.max(0, expiresAt - Date.now());
     }
-
+    
     return {
       valid,
       needsRefresh,
       timeUntilExpiry,
-      token: parsedToken,
+      token: parsedToken
     };
   } catch (error) {
     console.error("Error checking token status:", error);
